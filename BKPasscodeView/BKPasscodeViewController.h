@@ -29,6 +29,7 @@ typedef enum : NSUInteger {
 @property (nonatomic) UIKeyboardType                            keyboardType;
 @property (nonatomic, strong, readonly) BKPasscodeInputView     *passcodeInputView;
 @property (nonatomic, strong) BKTouchIDManager                  *touchIDManager;
+@property (nonatomic) NSTimeInterval                            autoHideInterval;
 
 /**
  * Customize passcode input view
@@ -92,5 +93,7 @@ typedef enum : NSUInteger {
  * If you return nil, passcode view will unlock otherwise it will lock until the date.
  */
 - (NSDate *)passcodeViewControllerLockUntilDate:(BKPasscodeViewController *)aViewController;
+
+- (void)passcodeViewControllerDidTimeout:(BKPasscodeViewController *)aViewController;
 
 @end

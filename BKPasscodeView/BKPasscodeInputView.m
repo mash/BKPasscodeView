@@ -62,6 +62,7 @@
     _passcodeStyle = BKPasscodeInputViewNumericPasscodeStyle;
     _keyboardType = UIKeyboardTypeNumberPad;
     _maximumLength = 0;
+    _errorMessageStyle = BKErrorMessageStyleWarning;
     
     _titleLabel = [[UILabel alloc] init];
     [[self class] configureTitleLabel:_titleLabel];
@@ -72,7 +73,7 @@
     [self addSubview:_messageLabel];
     
     _errorMessageLabel = [[UILabel alloc] init];
-    [[self class] configureErrorMessageLabel:_errorMessageLabel];
+    [[self class] configureErrorMessageLabel:_errorMessageLabel style: _errorMessageStyle];
     _errorMessageLabel.hidden = YES;
     [self addSubview:_errorMessageLabel];
 }
@@ -95,18 +96,37 @@
     aLabel.font = [UIFont systemFontOfSize:15.0f];
 }
 
-+ (void)configureErrorMessageLabel:(UILabel *)aLabel
++ (void)configureErrorMessageLabel:(UILabel *)aLabel style:(BKErrorMessageStyle)style
 {
-    aLabel.backgroundColor = [UIColor clearColor];
-    aLabel.numberOfLines = 0;
-    aLabel.textAlignment = NSTextAlignmentCenter;
-    aLabel.lineBreakMode = NSLineBreakByWordWrapping;
-    aLabel.backgroundColor = [UIColor colorWithRed:0.63 green:0.2 blue:0.13 alpha:1];
-    aLabel.textColor = [UIColor whiteColor];
-    aLabel.font = [UIFont systemFontOfSize:15.0f];
-    
-    aLabel.layer.cornerRadius = 10.0f;
-    aLabel.layer.masksToBounds = YES;
+    if (style == BKErrorMessageStyleWarning) {
+        aLabel.backgroundColor = [UIColor clearColor];
+        aLabel.numberOfLines = 0;
+        aLabel.textAlignment = NSTextAlignmentCenter;
+        aLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        aLabel.backgroundColor = [UIColor colorWithRed:0.63 green:0.2 blue:0.13 alpha:1];
+        aLabel.textColor = [UIColor whiteColor];
+        aLabel.font = [UIFont systemFontOfSize:15.0f];
+
+        aLabel.layer.cornerRadius = 10.0f;
+        aLabel.layer.masksToBounds = YES;
+    }
+    else {
+        aLabel.backgroundColor = [UIColor clearColor];
+        aLabel.numberOfLines = 0;
+        aLabel.textAlignment = NSTextAlignmentCenter;
+        aLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        aLabel.backgroundColor = [UIColor clearColor];
+        aLabel.textColor = [UIColor grayColor];
+        aLabel.font = [UIFont systemFontOfSize:15.0f];
+    }
+}
+
+- (void)setErrorMessageStyle:(BKErrorMessageStyle)errorMessageStyle
+{
+    if (_errorMessageStyle != errorMessageStyle) {
+        _errorMessageStyle = errorMessageStyle;
+        [[self class] configureErrorMessageLabel:_errorMessageLabel style: _errorMessageStyle];
+    }
 }
 
 - (void)setPasscodeStyle:(BKPasscodeInputViewPasscodeStyle)passcodeStyle

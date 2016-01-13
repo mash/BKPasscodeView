@@ -15,6 +15,10 @@ typedef enum : NSUInteger {
     BKPasscodeInputViewNormalPasscodeStyle,
 } BKPasscodeInputViewPasscodeStyle;
 
+typedef NS_ENUM(NSUInteger, BKErrorMessageStyle) {
+    BKErrorMessageStyleInfo,
+    BKErrorMessageStyleWarning, // default
+};
 
 @protocol BKPasscodeInputViewDelegate;
 
@@ -26,6 +30,7 @@ typedef enum : NSUInteger {
 @property (nonatomic) BKPasscodeInputViewPasscodeStyle  passcodeStyle;
 @property (nonatomic) UIKeyboardType                    keyboardType;
 @property (nonatomic) NSUInteger                        maximumLength;
+@property (nonatomic) BKErrorMessageStyle               errorMessageStyle;
 
 @property (nonatomic, strong) NSString                  *title;
 @property (nonatomic, strong) NSString                  *message;
@@ -38,7 +43,7 @@ typedef enum : NSUInteger {
 // You can override these methods to customize message label appearance.
 + (void)configureTitleLabel:(UILabel *)aLabel;
 + (void)configureMessageLabel:(UILabel *)aLabel;
-+ (void)configureErrorMessageLabel:(UILabel *)aLabel;
++ (void)configureErrorMessageLabel:(UILabel *)aLabel style:(BKErrorMessageStyle)style;
 
 @end
 

@@ -32,6 +32,11 @@ typedef enum : NSUInteger {
 @property (nonatomic) CGFloat                               keyboardHeight;
 @property (nonatomic, strong) AFViewShaker                  *viewShaker;
 
+@property (nonatomic, strong) NSTimer                       *autoHideTimer;
+@property (nonatomic) int                                   remainingSecondsToHide;
+@property (nonatomic, strong) NSTimer                       *maskAutoHideTimer;
+@property (nonatomic) BOOL                                  autoHideTimerMessageMasked;
+
 @property (nonatomic) BOOL                                  promptingTouchID;
 
 @end
@@ -66,10 +71,20 @@ typedef enum : NSUInteger {
 
 - (void)dealloc
 {
+    [self invalidateTimers];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)invalidateTimers
+{
     [self.lockStateUpdateTimer invalidate];
     self.lockStateUpdateTimer = nil;
-    
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
+
+    [self.autoHideTimer invalidate];
+    self.autoHideTimer = nil;
+
+    [self.maskAutoHideTimer invalidate];
+    self.maskAutoHideTimer = nil;
 }
 
 - (void)setType:(BKPasscodeViewControllerType)type
@@ -144,6 +159,8 @@ typedef enum : NSUInteger {
     [super viewWillDisappear:animated];
     
     [self.view endEditing:YES];
+
+    [self invalidateTimers];
 }
 
 - (void)viewDidLayoutSubviews
@@ -164,6 +181,26 @@ typedef enum : NSUInteger {
 }
 
 #pragma mark - Public methods
+
+- (void)setAutoHideInterval:(NSTimeInterval)autoHideInterval
+{
+    _autoHideInterval = autoHideInterval;
+    _remainingSecondsToHide = autoHideInterval;
+    _autoHideTimerMessageMasked = false;
+
+    if (autoHideInterval == 0) {
+        [self.autoHideTimer invalidate];
+        self.autoHideTimer = nil;
+        [self.maskAutoHideTimer invalidate];
+        self.maskAutoHideTimer = nil;
+        return;
+    }
+    self.autoHideTimer = [NSTimer scheduledTimerWithTimeInterval:1
+                                                          target:self
+                                                        selector:@selector(autoHideTimerFired:)
+                                                        userInfo:nil
+                                                         repeats:true];
+}
 
 - (void)setPasscodeStyle:(BKPasscodeInputViewPasscodeStyle)passcodeStyle
 {
@@ -337,6 +374,7 @@ typedef enum : NSUInteger {
 
 - (void)showFailedAttemptsCount:(NSUInteger)failCount inputView:(BKPasscodeInputView *)aInputView
 {
+    aInputView.errorMessageStyle = BKErrorMessageStyleWarning;
     if (failCount == 0) {
         aInputView.errorMessage = NSLocalizedStringFromTable(@"Invalid Passcode", @"BKPasscodeView", @"잘못된 암호");
     } else if (failCount == 1) {
@@ -344,6 +382,21 @@ typedef enum : NSUInteger {
     } else {
         aInputView.errorMessage = [NSString stringWithFormat:NSLocalizedStringFromTable(@"%d Failed Passcode Attempts", @"BKPasscodeView", @"%d번의 암호 입력 시도 실패"), failCount];
     }
+
+    if (self.autoHideTimer) {
+        self.autoHideTimerMessageMasked = YES;
+        self.maskAutoHideTimer = [NSTimer scheduledTimerWithTimeInterval:3
+                                                                  target:self
+                                                                selector:@selector(maskAutoHideTimerFired:)
+                                                                userInfo:nil
+                                                                 repeats:false];
+    }
+}
+
+- (void)showRemainingSecondsToHide:(int)count
+{
+    self.passcodeInputView.errorMessageStyle = BKErrorMessageStyleInfo;
+    self.passcodeInputView.errorMessage = [NSString stringWithFormat:NSLocalizedStringFromTable(@"Auto hide in %d seconds", @"BKPasscodeView", @""), count];
 }
 
 - (void)showTouchIDSwitchView
@@ -378,6 +431,26 @@ typedef enum : NSUInteger {
     }
     
     return YES;
+}
+
+#pragma mark - Timer
+
+- (void)maskAutoHideTimerFired: (NSTimer *)timer {
+    self.autoHideTimerMessageMasked = NO;
+}
+
+- (void)autoHideTimerFired: (NSTimer*)timer {
+    if (self.remainingSecondsToHide-- == 0) {
+        [timer invalidate];
+        self.autoHideTimer = nil;
+        if ([self.delegate respondsToSelector:@selector(passcodeViewControllerDidTimeout:)]) {
+            [self.delegate passcodeViewControllerDidTimeout:self];
+        }
+    }
+    else if (!self.autoHideTimerMessageMasked) {
+        // update message
+        [self showRemainingSecondsToHide:self.remainingSecondsToHide];
+    }
 }
 
 #pragma mark - BKPasscodeInputViewDelegate
